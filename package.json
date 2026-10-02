@@ -1,0 +1,44 @@
+{
+  "name": "printer-device-manager",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plataforma local de descubrimiento y monitoreo SNMP de impresoras de red (inspirada en RICOH Device Manager NX Lite).",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "probe": "tsx apps/server/src/cli/probe.ts",
+    "server": "tsx apps/server/src/index.ts",
+    "dev": "tsx watch apps/server/src/index.ts",
+    "build:web": "npm run build -w @pdm/web",
+    "serve": "node scripts/serve-lan.mjs",
+    "start:lan": "npm run build:web && npm run serve",
+    "desktop:dev": "electron apps/desktop",
+    "desktop:build": "npm run build:web && node apps/desktop/build-server.mjs && npm run dist -w @pdm/desktop",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "create-admin": "tsx apps/server/src/cli/create-admin.ts",
+    "reset-password": "tsx apps/server/src/cli/reset-password.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.base.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.0",
+    "@types/ws": "^8.18.1",
+    "prisma": "^6.2.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.2.0",
+    "express": "^5.0.1",
+    "net-snmp": "^3.15.0",
+    "ws": "^8.21.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

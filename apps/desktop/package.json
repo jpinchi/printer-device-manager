@@ -1,0 +1,76 @@
+{
+  "name": "@pdm/desktop",
+  "version": "0.1.79",
+  "private": true,
+  "description": "Printer Device Manager — aplicación de escritorio (Electron)",
+  "author": "Printer Device Manager",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "bundle": "node build-server.mjs",
+    "dist": "electron-builder"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "electron": "44.0.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.pdm.printerdevicemanager",
+    "productName": "Printer Device Manager",
+    "electronVersion": "44.0.0",
+    "artifactName": "PrinterDeviceManager-Setup-${version}.${ext}",
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "http://192.0.2.24:2626/api/desktop/feed/"
+      }
+    ],
+    "directories": {
+      "output": "dist-installer",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/server",
+        "to": "server",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "resources/web",
+        "to": "web"
+      },
+      {
+        "from": "resources/db-template",
+        "to": "db-template"
+      },
+      {
+        "from": "extras",
+        "to": "hub"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Printer Device Manager"
+    }
+  }
+}

@@ -1,0 +1,354 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===========================================================================
+ * Tokens de tema. Por defecto OSCURO (:root). El modo CLARO se activa con
+ * [data-theme="light"] en <html>. Valores como tripletas "R G B" para poder
+ * usar rgb(var(--x) / alpha) y conservar utilidades con opacidad.
+ * ========================================================================= */
+:root {
+  color-scheme: dark;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --color-bg: 11 17 32;
+  --color-panel: 14 23 41;
+  --color-card: 20 31 54;
+  --color-input: 9 14 27;
+  --color-border: 36 48 73;
+  --color-muted: 147 164 195;
+  --color-accent: 56 189 248;
+  --color-accent2: 129 140 248;
+  --color-ok: 34 197 94;
+  --color-notice: 45 212 191;
+  --color-warn: 245 158 11;
+  --color-danger: 244 63 94;
+
+  /* Overlay para superficies elevadas / hover (blanco en oscuro). */
+  --elev: 255 255 255;
+  /* Paneles "hundidos" (sub-tarjetas) y chips de código. */
+  --sunken: 10 15 28;
+  --code: 4 9 20;
+
+  /* Rampa de texto (100 = más fuerte … 500 = más tenue). */
+  --slate-100: 241 245 249;
+  --slate-200: 226 232 240;
+  --slate-300: 203 213 225;
+  --slate-400: 148 163 184;
+  --slate-500: 100 116 139;
+  --slate-600: 71 85 105;
+
+  /* Tintes del fondo (radiales). */
+  --grad1: 56 189 248;
+  --grad2: 129 140 248;
+
+  /* --- Fondo del login (aurora/halo/partículas): intensidades por tema. ---
+     En OSCURO los tintes claros leen bien con poca opacidad; en CLARO hay que
+     subir la opacidad y bajar el desenfoque para que NO se laven sobre el
+     fondo casi blanco (si no, el login se ve "plano"). */
+  --lg-aurora-strong: 0.7;
+  --lg-aurora-mid: 0.5;
+  --lg-halo-a: 0.5;
+  --lg-halo-b: 0.46;
+  --lg-blur-halo: 80px;
+  --lg-blur-aurora: 100px;
+  --lg-particle-a: 0.95;
+  --lg-particle-glow: 0.8;
+  --lg-grid-a: 0.26;
+  --lg-vignette: 0.22;
+  /* Resplandor central del login (menos desenfoque = más presencia). */
+  --lg-blur-glow: 60px;
+  --lg-glow-a: 0.5;
+  --lg-glow-b: 0.32;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --color-bg: 237 242 249;
+  --color-panel: 255 255 255;
+  --color-card: 255 255 255;
+  --color-input: 241 245 249;
+  --color-border: 214 223 236;
+  --color-muted: 91 107 136;
+  --color-accent: 2 132 199;
+  --color-accent2: 79 70 229;
+  --color-ok: 21 128 61;
+  --color-notice: 13 148 136;
+  --color-warn: 180 83 9;
+  --color-danger: 225 29 72;
+
+  /* En claro el overlay es oscuro (para hovers/elevación sobre blanco). */
+  --elev: 15 23 42;
+  /* Paneles/chips claros (antes eran negros translúcidos y se veían oscuros). */
+  --sunken: 238 242 249;
+  --code: 226 232 240;
+
+  /* Rampa invertida: texto oscuro sobre fondos claros. */
+  --slate-100: 15 23 42;
+  --slate-200: 30 41 59;
+  --slate-300: 51 65 85;
+  --slate-400: 71 85 105;
+  --slate-500: 100 116 139;
+  --slate-600: 148 163 184;
+
+  --grad1: 2 132 199;
+  --grad2: 79 70 229;
+
+  /* En CLARO el fondo del login se refuerza: más opacidad, menos desenfoque y
+     rejilla algo más marcada para que la aurora/partículas se vean sobre el
+     fondo claro (evita que el login parezca un color sólido). */
+  --lg-aurora-strong: 0.7;
+  --lg-aurora-mid: 0.5;
+  --lg-halo-a: 0.56;
+  --lg-halo-b: 0.5;
+  --lg-blur-halo: 64px;
+  --lg-blur-aurora: 72px;
+  --lg-particle-a: 0.9;
+  --lg-particle-glow: 0.4;
+  --lg-grid-a: 0.11;
+  --lg-vignette: 0;
+  --lg-blur-glow: 60px;
+  --lg-glow-a: 0.25;
+  --lg-glow-b: 0.15;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  color: rgb(var(--slate-100));
+  background-color: rgb(var(--color-bg));
+  /* Degradado radial sutil para dar profundidad (se adapta al tema). */
+  background-image:
+    radial-gradient(1200px 600px at 100% -10%, rgb(var(--grad1) / 0.1), transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, rgb(var(--grad2) / 0.1), transparent 55%);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  transition: background-color 0.3s var(--ease), color 0.3s var(--ease);
+}
+
+/* Transición global suave para color/fondo/borde (hovers, estados, tema). */
+a,
+button,
+input,
+select,
+.card,
+[class*="transition"] {
+  transition-timing-function: var(--ease);
+}
+
+/* Respeta usuarios que prefieren menos movimiento. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Scrollbar sobria (adaptada al tema). */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--color-border));
+  border-radius: 99px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--color-muted) / 0.7);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Transición de página (aplicada por template.tsx en cada navegación). */
+.page-enter {
+  /* `backwards` (no `both`/`forwards`): la animación aplica su primer fotograma
+     antes de arrancar, pero NO retiene el `transform` final. Si se retuviera
+     (translateY(0) ≠ none), ese transform crearía un bloque contenedor y
+     ROMPERÍA `position: sticky` del Topbar (la barra superior se iría al hacer
+     scroll). Al limpiarse el transform al terminar, el sticky funciona. */
+  animation: fade-in-up 0.42s var(--ease) backwards;
+}
+
+/* Lienzo base del fondo del login. En OSCURO no pinta nada (se ve el fondo
+   oscuro + la aurora). En CLARO añade un lavado de color suave por TODA el
+   área para que el login NO se vea como un blanco plano. */
+.login-canvas {
+  /* OSCURO: campo azul de base (no un navy plano) para que la rejilla y las
+     partículas lean y el centro tenga "baño" de azul, como el diseño objetivo. */
+  background:
+    radial-gradient(85% 70% at 50% 32%, rgb(var(--color-accent) / 0.14), transparent 62%),
+    radial-gradient(65% 60% at 10% 92%, rgb(var(--color-accent2) / 0.12), transparent 64%),
+    radial-gradient(60% 55% at 92% 8%, rgb(var(--color-accent) / 0.1), transparent 62%);
+}
+:root[data-theme="light"] .login-canvas {
+  background:
+    radial-gradient(120% 95% at 12% 6%, rgb(var(--color-accent) / 0.15), transparent 58%),
+    radial-gradient(120% 95% at 88% 94%, rgb(var(--color-accent2) / 0.13), transparent 58%),
+    linear-gradient(155deg, rgb(var(--color-accent) / 0.07), rgb(var(--color-accent2) / 0.035) 55%, transparent);
+}
+
+/* Fondo "aurora": manchas translúcidas que derivan lentamente (login). */
+@keyframes aurora-drift {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(12%, -13%) scale(1.25);
+  }
+  66% {
+    transform: translate(-10%, 9%) scale(0.85);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+.aurora-blob {
+  animation: aurora-drift 22s var(--ease) infinite;
+  will-change: transform;
+}
+
+/* Halo cónico que gira lento detrás de la tarjeta de login (claro/oscuro). */
+@keyframes halo-spin {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* Partículas flotantes: suben con leve deriva lateral y brillan al pasar. */
+@keyframes particle-float {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate(10px, -46px);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(0, 0);
+    opacity: 0.3;
+  }
+}
+
+/* Latido suave del brillo (halo/tarjeta) para dar vida sin distraer. */
+@keyframes soft-pulse {
+  0%,
+  100% {
+    opacity: 0.82;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Respeta la preferencia de menos movimiento del sistema. */
+@media (prefers-reduced-motion: reduce) {
+  .aurora-blob,
+  [style*="halo-spin"],
+  [style*="particle-float"],
+  [style*="soft-pulse"] {
+    animation: none !important;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-border/80 bg-card/70 shadow-card backdrop-blur-sm;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-[#04263a]
+      transition-all duration-200 hover:brightness-110 active:scale-[0.97]
+      disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100;
+    background-image: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 45%, #818cf8 130%);
+    box-shadow: 0 6px 18px -8px rgba(56, 189, 248, 0.6);
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-border
+      px-3.5 py-2 text-sm font-medium text-muted transition-all duration-200
+      hover:-translate-y-px hover:border-accent/60 hover:text-accent
+      active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50;
+    background-color: rgb(var(--elev) / 0.03);
+  }
+  .btn-ghost:hover {
+    background-color: rgb(var(--elev) / 0.07);
+  }
+
+  .input {
+    @apply rounded-xl border border-border px-3.5 py-2 text-sm text-slate-100
+      shadow-inner outline-none transition-all duration-200 placeholder:text-slate-500
+      focus:border-accent/70 focus:ring-2 focus:ring-accent/25;
+    background-color: rgb(var(--color-input));
+  }
+
+  /* Texto con degradado (títulos/acentos), adaptado al tema. */
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, rgb(var(--color-accent)), rgb(var(--color-accent2)));
+  }
+
+  /* Contenedor con efecto de brillo al pasar (skeleton/loaders). */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(var(--elev) / 0.06),
+      transparent
+    );
+    animation: shimmer 1.6s infinite;
+  }
+}
+
+@layer utilities {
+  /* Superficies elevadas / hovers, adaptadas al tema (blanco en oscuro,
+     oscuro en claro). Sustituyen a los bg-white/x que no adaptaban. */
+  .bg-elev {
+    background-color: rgb(var(--elev) / 0.04);
+  }
+  .hover-elev:hover {
+    background-color: rgb(var(--elev) / 0.06);
+  }
+  /* Paneles "hundidos" y chips de código (sustituyen a bg-black/x que en claro
+     se veían demasiado oscuros). */
+  .bg-sunken {
+    background-color: rgb(var(--sunken));
+  }
+  .bg-code {
+    background-color: rgb(var(--code));
+  }
+}
+
+/* En modo claro, sombras mucho más suaves (evita "halos" marcados sobre el
+   texto y superficies claras). Fuera de @layer para ganar en especificidad. */
+:root[data-theme="light"] .shadow-inner {
+  box-shadow: inset 0 1px 2px rgb(15 23 42 / 0.04);
+}
+:root[data-theme="light"] .shadow-card {
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 10px 30px -18px rgb(15 23 42 / 0.14);
+}
+:root[data-theme="light"] .shadow-soft {
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px -14px rgb(15 23 42 / 0.14);
+}

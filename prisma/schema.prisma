@@ -1,0 +1,240 @@
+// Esquema de datos — CONTRATO compartido (sección 15).
+// Primera etapa: SQLite. Migración futura a PostgreSQL cambiando el provider.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Printer {
+  id                     String   @id @default(cuid())
+  name                   String
+  ipAddress              String   @unique
+  macAddress             String?
+  hostname               String?
+  manufacturer           String   @default("UNKNOWN")
+  model                  String?
+  serialNumber           String?
+  firmware               String?
+  snmpVersion            String   @default("v2c")
+  // La community NUNCA se expone al frontend; se guarda cifrada (sección 22/23).
+  snmpCommunityEncrypted String?
+  sysObjectId            String?
+  status                 String   @default("UNKNOWN") // ONLINE | OFFLINE | UNKNOWN
+  lastSeen               DateTime?
+  // sysUpTime (segundos) y el instante en que se leyó, para calcular el uptime
+  // "en vivo" en la UI: actual = uptimeSeconds + (ahora − uptimeReadAt).
+  uptimeSeconds          Int?
+  uptimeReadAt           DateTime?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  locationId String?
+  location   Location? @relation(fields: [locationId], references: [id])
+  workUnitId String?
+  workUnit   WorkUnit? @relation(fields: [workUnitId], references: [id])
+
+  supplies      PrinterSupply[]
+  counters      PrinterCounter[]
+  trays         PrinterTray[]
+  events        PrinterEvent[]
+  statusHistory PrinterStatusHistory[]
+
+  @@index([manufacturer])
+  @@index([status])
+}
+
+model Location {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  printers    Printer[]
+}
+
+// Unidad de Trabajo: igual que Location (nombre único + descripción), otra
+// dimensión para clasificar la flota (p. ej. la unidad/negociado dueño del equipo).
+model WorkUnit {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  printers    Printer[]
+}
+
+model PrinterSupply {
+  id              String   @id @default(cuid())
+  printerId       String
+  printer         Printer  @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  name            String
+  type            String
+  color           String
+  level           Int
+  maxCapacity     Int
+  percent         Int?
+  updatedAt       DateTime @updatedAt
+
+  @@index([printerId])
+}
+
+model PrinterCounter {
+  id          String   @id @default(cuid())
+  printerId   String
+  printer     Printer  @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  counterType String
+  value       Int
+  collectedAt DateTime @default(now())
+
+  @@index([printerId, counterType])
+  // listPrinters trae los últimos contadores (orderBy collectedAt desc, take 20)
+  // por impresora; este índice evita ordenar la tabla completa por impresora.
+  @@index([printerId, collectedAt])
+}
+
+model PrinterTray {
+  id           String   @id @default(cuid())
+  printerId    String
+  printer      Printer  @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  trayName     String
+  paperSize    String?
+  paperType    String?
+  capacity     Int?
+  currentLevel Int?
+  capacityUnit String?
+  isEmpty      Boolean  @default(false)
+  updatedAt    DateTime @updatedAt
+
+  @@index([printerId])
+}
+
+model PrinterEvent {
+  id         String    @id @default(cuid())
+  printerId  String
+  printer    Printer   @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  severity   String // INFO | WARNING | ERROR
+  type       String
+  message    String
+  source     String?
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  @@index([printerId, createdAt])
+  // Listado de alertas de TODA la flota (activas/resueltas) ordenado por fecha:
+  // sin estos índices, ese query hace scan completo + sort al crecer la tabla.
+  @@index([resolvedAt, createdAt])
+  @@index([createdAt])
+  // Dedupe/consulta por tipo dentro de una impresora (p. ej. TONER_NOTICE 24h).
+  @@index([printerId, type, createdAt])
+}
+
+model PrinterStatusHistory {
+  id           String   @id @default(cuid())
+  printerId    String
+  printer      Printer  @relation(fields: [printerId], references: [id], onDelete: Cascade)
+  status       String
+  tonerBlack   Int?
+  tonerCyan    Int?
+  tonerMagenta Int?
+  tonerYellow  Int?
+  totalPages   Int?
+  timestamp    DateTime @default(now())
+
+  @@index([printerId, timestamp])
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  role         String   @default("Viewer") // Administrator | Technician | Viewer
+  active       Boolean  @default(true)
+  // Recuperación de contraseña (opcional): hash scrypt de un "código de
+  // recuperación" que el usuario/admin define. Permite el autoservicio de
+  // "olvidé mi contraseña" sin correo. null = sin código configurado.
+  recoveryCodeHash String?
+  // Forzar cambio de contraseña en el próximo login (p.ej. tras un reset del
+  // admin que entrega una clave temporal). Se limpia al cambiarla.
+  mustChangePassword Boolean @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+/**
+ * Foto real de un modelo de impresora (subida por Administrator). Se sirve
+ * públicamente para poder usarla en <img>. `key` = "fabricante|modelo" en
+ * minúsculas (una foto por modelo).
+ */
+model ModelImage {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  manufacturer String
+  model        String
+  fileName     String
+  // Bytes de la imagen EN LA BD (fuente de verdad; portable, sobrevive a
+  // reinstalaciones y viaja con la BD). `filePath` queda para las filas antiguas
+  // en disco hasta que el backfill las migre a `data`.
+  data         Bytes?
+  filePath     String?
+  mimeType     String
+  fileSize     Int
+  // ¿Está ASIGNADA a su modelo (se muestra en el detalle) o solo vive en el
+  // CATÁLOGO/biblioteca? "Eliminar" pone assigned=false (no borra la fila): la
+  // foto sigue en la biblioteca para reutilizarla; el modelo usa la ilustración.
+  assigned     Boolean  @default(true)
+  updatedAt    DateTime @updatedAt
+}
+
+/**
+ * Ajustes de la aplicación (una sola fila, id = "app"). Editables por
+ * Administrator. Incluye umbrales de alerta, costos por página (para reportes)
+ * y la configuración de alertas por correo (SMTP).
+ */
+model AppSettings {
+  id                String   @id @default("app")
+  tonerLowPercent   Int      @default(20) // umbral "tóner bajo"
+  tonerEmptyPercent Int      @default(0) // umbral "tóner agotado"
+  costPerPageBw     Float    @default(0) // costo por página B/N
+  costPerPageColor  Float    @default(0) // costo por página color
+  currency          String   @default("USD")
+  replenishDays     Int      @default(14) // horizonte "por reponer" (días)
+  // Alertas por correo (SMTP)
+  alertEmailEnabled Boolean  @default(false)
+  smtpHost          String?
+  smtpPort          Int?
+  smtpSecure        Boolean  @default(false)
+  smtpUser          String?
+  smtpPassword      String? // NUNCA se expone al cliente
+  alertFrom         String?
+  alertTo           String? // destinatarios separados por coma
+  updatedAt         DateTime @updatedAt
+}
+
+/**
+ * Catálogo de drivers de impresora. Cada entrada cubre uno o varios modelos y
+ * puede tener una URL oficial y/o un instalador alojado en el servidor
+ * (`filePath`). En Windows, un .inf/.exe alojado puede instalarse en el host.
+ */
+model DriverPackage {
+  id           String   @id @default(cuid())
+  manufacturer String
+  models       String // modelos que cubre, separados por coma (p. ej. "IM 550, IM 600")
+  name         String
+  os           String   @default("Windows") // Windows | macOS | Linux
+  version      String?
+  url          String? // enlace oficial de descarga
+  fileName     String? // nombre original del instalador alojado
+  filePath     String? // ruta en disco del servidor (nunca se expone al cliente)
+  fileSize     Int?
+  installArgs  String? // flags para instalación silenciosa de un .exe
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([manufacturer])
+}

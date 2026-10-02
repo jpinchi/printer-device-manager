@@ -1,0 +1,15 @@
+{
+  "name": "Printer Device Manager",
+  "short_name": "PDM",
+  "description": "Descubrimiento y monitoreo SNMP de impresoras de red (clon de RICOH Device Manager NX Lite).",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b1120",
+  "theme_color": "#0b1120",
+  "icons": [
+    { "src": "/icon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "any" },
+    { "src": "/icon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "maskable" }
+  ]
+}

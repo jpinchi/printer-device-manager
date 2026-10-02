@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Printer Device Manager</title>
+    <style>
+      :root {
+        --bg: #0f172a; --card: #1e293b; --text: #e2e8f0; --muted: #94a3b8;
+        --accent: #38bdf8; --ok: #22c55e; --off: #ef4444; --border: #334155;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); }
+      header { padding: 20px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+      header h1 { font-size: 18px; margin: 0; }
+      .mock { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: #7c2d12; color: #fdba74; }
+      main { padding: 28px; max-width: 1100px; margin: 0 auto; }
+      .add { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+      input { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; border-radius: 8px; }
+      button { background: var(--accent); border: 0; color: #04293a; font-weight: 600; padding: 9px 16px; border-radius: 8px; cursor: pointer; }
+      button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+      table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; }
+      th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 14px; }
+      th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+      .dot { display: inline-block; width: 9px; height: 9px; border-radius: 99px; margin-right: 7px; }
+      .ONLINE { background: var(--ok); } .OFFLINE, .UNKNOWN { background: var(--off); }
+      .bar { height: 6px; background: var(--border); border-radius: 99px; width: 90px; overflow: hidden; display: inline-block; vertical-align: middle; }
+      .bar > span { display: block; height: 100%; background: var(--accent); }
+      .empty { color: var(--muted); padding: 40px; text-align: center; }
+      .msg { margin: 12px 0; color: #fca5a5; font-size: 13px; min-height: 18px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>🖨️ Printer Device Manager</h1>
+      <span id="mock" class="mock" hidden>MODO MOCK</span>
+    </header>
+    <main>
+      <div class="add">
+        <input id="ip" placeholder="IP de la impresora (ej. 192.0.2.51)" size="28" />
+        <input id="community" placeholder="community" value="public" size="14" />
+        <button id="addBtn">Agregar por SNMP</button>
+        <button class="ghost" id="refreshBtn">Refrescar</button>
+      </div>
+      <div id="msg" class="msg"></div>
+      <table>
+        <thead>
+          <tr><th>Estado</th><th>Nombre</th><th>IP</th><th>Modelo</th><th>Serial</th><th>Tóner (K)</th><th></th></tr>
+        </thead>
+        <tbody id="rows"><tr><td colspan="7" class="empty">Cargando…</td></tr></tbody>
+      </table>
+    </main>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const msg = (t) => ($("msg").textContent = t || "");
+
+      async function health() {
+        try {
+          const h = await (await fetch("/api/health")).json();
+          $("mock").hidden = !h.mock;
+        } catch {}
+      }
+
+      function tonerBlack(p) {
+        const k = (p.supplies || []).find((s) => s.color === "BLACK");
+        if (!k || k.percent == null) return '<span style="color:var(--muted)">—</span>';
+        return `<span class="bar"><span style="width:${k.percent}%"></span></span> ${k.percent}%`;
+      }
+
+      async function load() {
+        try {
+          const printers = await (await fetch("/api/printers")).json();
+          const rows = $("rows");
+          if (!printers.length) {
+            rows.innerHTML = '<tr><td colspan="7" class="empty">Sin impresoras. Agrega una por IP.</td></tr>';
+            return;
+          }
+          rows.innerHTML = printers
+            .map(
+              (p) => `<tr>
+                <td><span class="dot ${p.status}"></span>${p.status}</td>
+                <td>${p.name ?? ""}</td>
+                <td>${p.ipAddress}</td>
+                <td>${p.model ?? "—"}</td>
+                <td>${p.serialNumber ?? "—"}</td>
+                <td>${tonerBlack(p)}</td>
+                <td><button class="ghost" data-id="${p.id}">Poll</button></td>
+              </tr>`
+            )
+            .join("");
+          rows.querySelectorAll("button[data-id]").forEach((b) =>
+            b.addEventListener("click", () => poll(b.dataset.id))
+          );
+        } catch (e) {
+          msg("Error cargando impresoras: " + e.message);
+        }
+      }
+
+      async function add() {
+        const ip = $("ip").value.trim();
+        if (!ip) return;
+        msg("Consultando " + ip + " por SNMP…");
+        const r = await fetch("/api/printers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ip, community: $("community").value.trim() }),
+        });
+        const data = await r.json();
+        if (!r.ok) { msg(data.error || "Error"); return; }
+        msg("Agregada: " + (data.printer?.model || ip));
+        $("ip").value = "";
+        load();
+      }
+
+      async function poll(id) {
+        msg("Actualizando…");
+        await fetch(`/api/printers/${id}/poll`, { method: "POST" });
+        msg("");
+        load();
+      }
+
+      $("addBtn").addEventListener("click", add);
+      $("refreshBtn").addEventListener("click", load);
+      $("ip").addEventListener("keydown", (e) => e.key === "Enter" && add());
+      health();
+      load();
+    </script>
+  </body>
+</html>

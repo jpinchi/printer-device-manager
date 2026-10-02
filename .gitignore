@@ -1,0 +1,27 @@
+node_modules/
+dist/
+*.log
+.env
+.env.local
+# Secretos en reposo / datos de ejecución (nunca versionar)
+.pdm-secret.key
+delegation.json
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+prisma/dev.db
+.next/
+out/
+apps/web/out/
+*.tsbuildinfo
+next-env.d.ts
+coverage/
+.DS_Store
+/drivers/
+/model-images/
+
+# Desktop (Electron) build outputs
+apps/desktop/dist-installer/
+apps/desktop/resources/
+logs/

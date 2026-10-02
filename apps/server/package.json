@@ -1,0 +1,21 @@
+{
+  "name": "@pdm/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@pdm/snmp-core": "*",
+    "@pdm/types": "*",
+    "@prisma/client": "^6.2.0",
+    "express": "^5.0.1",
+    "multer": "^2.2.0"
+  },
+  "devDependencies": {
+    "@types/multer": "^2.2.0"
+  }
+}
