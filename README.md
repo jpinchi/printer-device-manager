@@ -1,8 +1,6 @@
 <div align="center">
 
-# 🖨️ Printer Device Manager
-
-### Descubre, monitorea y administra toda tu flota de impresoras de red desde un solo lugar.
+<img src="docs/banner.svg" alt="Printer Device Manager — descubre, monitorea y administra toda tu flota de impresoras de red desde un solo lugar" width="100%" />
 
 [![Licencia](https://img.shields.io/badge/licencia-MIT-22c55e)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](#-cómo-funciona-por-dentro)
