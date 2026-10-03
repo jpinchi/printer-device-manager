@@ -11,7 +11,7 @@
 [![Electron](https://img.shields.io/badge/Electron-44-47848F?logo=electron&logoColor=white)](#-cómo-funciona-por-dentro)
 [![Pruebas](https://img.shields.io/badge/pruebas-130%20passing-22c55e)](#-calidad)
 
-**[Ver capturas](#-galería) · [Cómo probarlo](#-cómo-probarlo) · [Cómo funciona](#-cómo-funciona-por-dentro)**
+**[Ver capturas](#galeria) · [Cómo probarlo](#-cómo-probarlo) · [Cómo funciona](#-cómo-funciona-por-dentro)**
 
 <br/>
 
@@ -49,6 +49,8 @@ Está pensado para **equipos de soporte y TI** que administran muchas impresoras
 - 🌓 **Modo claro/oscuro y español/inglés** — el panel se adapta al gusto de cada quien.
 
 ---
+
+<a id="galeria"></a>
 
 ## 🖼️ Galería
 
@@ -158,10 +160,10 @@ Para generar las capturas de nuevo: `node scripts/capture-screenshots.mjs` (siem
 
 ## ✅ Calidad
 
-- **130 pruebas automatizadas** con Vitest (`npm test`): parsers SNMP, descubrimiento, polling, autenticación, *rate‑limiting* y cifrado de secretos.
-- **Secretos cifrados en reposo:** la *community* SNMP se guarda cifrada y **nunca** se expone al frontend (ver `apps/server/src/secrets.ts` y su prueba).
+- **130 pruebas automatizadas** con Vitest (`npm test`, después del paso 2 de [Cómo probarlo](#-cómo-probarlo)): parsers SNMP, descubrimiento, polling, autenticación, *rate‑limiting* y cifrado de secretos.
+- **Secretos cifrados en reposo:** la contraseña SMTP y la que usa cada sede para conectarse al servidor central se guardan cifradas con AES-256-GCM (ver `apps/server/src/secrets.ts` y su prueba). La *community* SNMP **nunca** se expone al frontend.
 - **Login protegido:** límite de intentos (*rate‑limit*) y **roles** (Administrador / Técnico / Observador) activables con `AUTH_ENFORCE=true`.
-- **Accesible y responsivo:** modo claro/oscuro, español/inglés y diseño que funciona en teléfono.
+- **Claro/oscuro y bilingüe:** el panel cambia entre modo claro y oscuro, y entre español e inglés.
 
 ---
 
