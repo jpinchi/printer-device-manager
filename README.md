@@ -73,12 +73,6 @@ Está pensado para **equipos de soporte y TI** que administran muchas impresoras
       <sub><b>Consumibles</b> — tóner de toda la flota</sub>
     </td>
   </tr>
-  <tr>
-    <td align="center" colspan="2">
-      <img src="docs/screenshots/mobile-dashboard.png" alt="El panel principal adaptado a pantalla de teléfono" width="240" /><br/>
-      <sub><b>Vista móvil</b> — el panel se adapta al teléfono</sub>
-    </td>
-  </tr>
 </table>
 
 > Las capturas usan **datos de ejemplo inventados** (IPs, modelos y ubicaciones ficticios). Se regeneran con el script de la sección [Cómo funciona](#-cómo-funciona-por-dentro).

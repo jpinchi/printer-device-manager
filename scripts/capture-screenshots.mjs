@@ -6,7 +6,7 @@
  *   1. Siembra una BD de demostración temporal (scripts/demo-seed.mjs) con datos
  *      INVENTADOS (ninguno real).
  *   2. Arranca el servidor unificado contra esa BD (auth desactivada, sin sondeo).
- *   3. Con Chrome en modo headless captura varias vistas (claro/oscuro/móvil).
+ *   3. Con Chrome en modo headless captura varias vistas (claro/oscuro).
  *   4. Optimiza los PNG con ImageMagick (`magick`) y los guarda en docs/screenshots/.
  *
  * Requisitos: Node ≥ 20, Google Chrome (o Edge) instalado, el frontend ya
@@ -71,7 +71,6 @@ const SHOTS = [
   { name: "dashboard-light", to: "/",                    theme: "light", w: 1600, h: 1000 },
   { name: "reportes",        to: "/monitoring/reports/", theme: "dark",  w: 1600, h: 1000 },
   { name: "consumibles",     to: "/monitoring/supplies/",theme: "dark",  w: 1600, h: 1000 },
-  { name: "mobile-dashboard",to: "/",                    theme: "dark",  w: 390,  h: 900  },
   // La ficha de impresora se añade dinámicamente (necesita un id real).
 ];
 
