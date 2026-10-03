@@ -7,10 +7,10 @@
  *      INVENTADOS (ninguno real).
  *   2. Arranca el servidor unificado contra esa BD (auth desactivada, sin sondeo).
  *   3. Con Chrome en modo headless captura varias vistas (claro/oscuro/móvil).
- *   4. Optimiza los PNG con ImageMagick (`convert`) y los guarda en docs/screenshots/.
+ *   4. Optimiza los PNG con ImageMagick (`magick`) y los guarda en docs/screenshots/.
  *
  * Requisitos: Node ≥ 20, Google Chrome (o Edge) instalado, el frontend ya
- * compilado (`npm run build:web`) y ImageMagick (`convert`) para optimizar
+ * compilado (`npm run build:web`) y ImageMagick (`magick`, o `convert` fuera de Windows) para optimizar
  * (opcional: si no está, se copian los PNG sin optimizar).
  *
  * Uso:   node scripts/capture-screenshots.mjs
@@ -89,14 +89,24 @@ function capture(browser, shot) {
   console.log(`  ✓ ${shot.name}.png`);
 }
 
+// Comando de ImageMagick: `magick` (v7) o `convert` (v6). En Windows NUNCA se usa
+// `convert`: ahí es System32\convert.exe, la herramienta que convierte discos FAT a NTFS.
+let magickCmd;
+function findMagick() {
+  if (magickCmd !== undefined) return magickCmd;
+  const cands = process.platform === "win32" ? ["magick"] : ["magick", "convert"];
+  magickCmd = cands.find((c) => spawnSync(c, ["-version"], { timeout: 10000 }).status === 0) || null;
+  return magickCmd;
+}
+
 // Optimiza con ImageMagick si está; si no, copia tal cual. Reduce si supera 400 KB.
 function optimize(src, dst) {
-  const hasMagick = spawnSync("convert", ["-version"], { timeout: 10000 }).status === 0;
-  if (!hasMagick) { copyFileSync(src, dst); return; }
-  spawnSync("convert", [src, "-strip", "-define", "png:compression-level=9", dst], { timeout: 30000 });
+  const magick = findMagick();
+  if (!magick) { copyFileSync(src, dst); return; }
+  spawnSync(magick, [src, "-strip", "-define", "png:compression-level=9", dst], { timeout: 30000 });
   if (statSync(dst).size > 400 * 1024) {
     // Segundo intento: baja la resolución un 15 %.
-    spawnSync("convert", [src, "-strip", "-resize", "85%", "-define", "png:compression-level=9", dst], { timeout: 30000 });
+    spawnSync(magick, [src, "-strip", "-resize", "85%", "-define", "png:compression-level=9", dst], { timeout: 30000 });
   }
 }
 
@@ -118,8 +128,15 @@ async function main() {
 
   // 2) Arrancar el servidor contra la BD de demo.
   console.log("Arrancando servidor de demo…");
-  server = spawn("npx", ["tsx", "apps/server/src/index.ts"], {
-    cwd: repo, shell: true,
+  // Si ya hay algo en el puerto, las capturas saldrían de ESE servidor (otra BD).
+  if (await fetch(`${BASE}/api/health`).then(() => true, () => false)) {
+    throw new Error(`Ya hay un servidor en el puerto ${PORT}. Ciérralo y vuelve a intentar.`);
+  }
+  // Node directo con el loader de tsx (sin npx ni shell): así server.kill() cierra
+  // el servidor de verdad. Con shell en Windows solo moría cmd.exe y el servidor
+  // quedaba vivo ocupando el puerto.
+  server = spawn(process.execPath, ["--import", "tsx", "apps/server/src/index.ts"], {
+    cwd: repo,
     env: {
       ...process.env, PORT: String(PORT), AUTH_ENFORCE: "false",
       POLLING_ENABLED: "false", PDM_WEB_OUT: webOut, DATABASE_URL: `file:${dbPath}`,
