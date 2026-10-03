@@ -14,6 +14,7 @@ import type { PrismaClient, Prisma } from "@prisma/client";
 import type { ProbeResult, SnmpCredentials } from "@pdm/types";
 import { probe as defaultProbe, type ProbeCollector } from "@pdm/snmp-core";
 import { config } from "../config.js";
+import { communityFor } from "../printer-community.js";
 import type { PollerKind } from "./selection.js";
 import { POLLER_KINDS } from "./selection.js";
 import {
@@ -85,12 +86,10 @@ export interface CycleReport {
 }
 
 /** Construye credenciales SNMP para una impresora concreta. */
-function credsFor(snmpVersion: string): SnmpCredentials {
+function credsFor(snmpVersion: string, storedCommunity: string | null): SnmpCredentials {
   return {
     version: (snmpVersion as SnmpCredentials["version"]) ?? config.snmp.defaultVersion,
-    // La community cifrada por impresora es aún un placeholder (sección 23);
-    // se usa la community por defecto del entorno, igual que el endpoint /poll.
-    community: config.snmp.defaultCommunity,
+    community: communityFor(storedCommunity),
     timeoutMs: config.snmp.timeoutMs,
     retries: config.snmp.retries,
   };
@@ -136,7 +135,7 @@ export async function runPollingCycle(
 
   const printers = await prisma.printer.findMany({
     where: opts.where,
-    select: { id: true, ipAddress: true, snmpVersion: true },
+    select: { id: true, ipAddress: true, snmpVersion: true, snmpCommunityEncrypted: true },
   });
 
   const report: CycleReport = {
@@ -155,7 +154,7 @@ export async function runPollingCycle(
   // en serie, unas pocas offline harían que el ciclo exceda su intervalo.
   await mapPool(printers, POLL_CONCURRENCY, async (p) => {
     try {
-      const result = await probeFn(p.ipAddress, credsFor(p.snmpVersion), {
+      const result = await probeFn(p.ipAddress, credsFor(p.snmpVersion, p.snmpCommunityEncrypted), {
         mock: opts.mock ?? config.snmp.mock,
         collect,
       });

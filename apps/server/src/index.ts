@@ -19,9 +19,11 @@ import type { ErrorRequestHandler } from "express";
 import {
   saveProbe,
   getPrinter,
+  getPrinterCommunity,
   listPrinters,
   deletePrinter,
 } from "./printers-repo.js";
+import { OMIT_COMMUNITY } from "./printer-community.js";
 import { startPolling, pollingConfig, runPollingCycle } from "./polling/index.js";
 import { discoveryRouter } from "./discovery-routes.js";
 import {
@@ -225,12 +227,13 @@ app.post("/api/printers", async (req, res) => {
   if (!ip) return res.status(400).json({ error: "Falta el campo 'ip'" });
 
   const creds = credsFrom(req.body ?? {});
+  const explicitCommunity = typeof req.body?.community === "string" && req.body.community ? req.body.community : undefined;
   try {
     const result = await probe(ip, creds, { mock: config.snmp.mock });
     if (!result.reachable) {
       return res.status(422).json({ error: `No hubo respuesta SNMP de ${ip}`, probe: result });
     }
-    const saved = await saveProbe(result, creds.community, creds.version);
+    const saved = await saveProbe(result, explicitCommunity, creds.version);
     if (saved) evaluateAlertsFor(saved.id, result);
     notifyChange("printer-added");
     res.status(201).json({ printer: saved, probe: result });
@@ -266,10 +269,10 @@ app.post("/api/printers/:id/poll", async (req, res) => {
   const printer = await getPrinter(req.params.id);
   if (!printer) return res.status(404).json({ error: "Printer not found" });
 
-  const creds = credsFrom({ version: printer.snmpVersion });
+  const creds = credsFrom({ version: printer.snmpVersion, community: await getPrinterCommunity(printer.id) });
   try {
     const result = await probe(printer.ipAddress, creds, { mock: config.snmp.mock });
-    const saved = await saveProbe(result, creds.community, creds.version);
+    const saved = await saveProbe(result, undefined, creds.version);
     evaluateAlertsFor(printer.id, result);
     notifyChange("printer-polled");
     res.json({ printer: saved, probe: result });
@@ -309,6 +312,7 @@ app.patch("/api/printers/:id", async (req, res) => {
     const updated = await prisma.printer.update({
       where: { id: req.params.id },
       data,
+      omit: OMIT_COMMUNITY,
       include: { location: true, workUnit: true, supplies: true },
     });
     notifyChange("printer-updated");
