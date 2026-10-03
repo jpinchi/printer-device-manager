@@ -9,7 +9,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A520-339933?logo=nodedotjs&logoColor=white)](#-cómo-probarlo)
 [![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white)](#-cómo-funciona-por-dentro)
 [![Electron](https://img.shields.io/badge/Electron-44-47848F?logo=electron&logoColor=white)](#-cómo-funciona-por-dentro)
-[![Pruebas](https://img.shields.io/badge/pruebas-130%20passing-22c55e)](#-calidad)
+[![Pruebas](https://img.shields.io/badge/pruebas-140%20passing-22c55e)](#-calidad)
 
 **[Ver capturas](#galeria) · [Cómo probarlo](#-cómo-probarlo) · [Cómo funciona](#-cómo-funciona-por-dentro)**
 
@@ -30,7 +30,7 @@ Está pensado para **equipos de soporte y TI** que administran muchas impresoras
 <details>
 <summary><b>🇬🇧 In English (short summary)</b></summary>
 
-**Printer Device Manager** is a local app that **discovers network printers over SNMP** and shows their health in one clean dashboard: online/offline status, per-color toner levels, page counters and alerts. It's built for IT/support teams managing large printer fleets across multiple sites. Everything (static frontend + API + live WebSocket) is served from a **single LAN address**, with a desktop app, a central/hub model for multiple branches, light/dark themes, Spanish/English UI, role-based auth, and PDF/Excel/CSV reports. Stack: TypeScript, Express 5, Prisma + SQLite, Next.js 15 / React 19, Electron 44. 130 passing tests.
+**Printer Device Manager** is a local app that **discovers network printers over SNMP** and shows their health in one clean dashboard: online/offline status, per-color toner levels, page counters and alerts. It's built for IT/support teams managing large printer fleets across multiple sites. Everything (static frontend + API + live WebSocket) is served from a **single LAN address**, with a desktop app, a central/hub model for multiple branches, light/dark themes, Spanish/English UI, role-based auth, and PDF/Excel/CSV reports. Stack: TypeScript, Express 5, Prisma + SQLite, Next.js 15 / React 19, Electron 44. 140 passing tests.
 </details>
 
 ---
@@ -143,7 +143,7 @@ flowchart LR
 | **SNMP** | `net-snmp` + adaptadores propios (RICOH, HP, Canon, Brother, Kyocera, Xerox, Lexmark + estándar) |
 | **Escritorio** | Electron 44, electron-builder, electron-updater |
 | **Runtime** | Node.js ≥ 20 · monorepo con workspaces de npm |
-| **Pruebas** | Vitest (130 pruebas) |
+| **Pruebas** | Vitest (140 pruebas) |
 
 Para generar las capturas de nuevo: `node scripts/capture-screenshots.mjs` (siembra datos de ejemplo, arranca el servidor, captura con Chrome y optimiza las imágenes).
 
@@ -160,8 +160,8 @@ Para generar las capturas de nuevo: `node scripts/capture-screenshots.mjs` (siem
 
 ## ✅ Calidad
 
-- **130 pruebas automatizadas** con Vitest (`npm test`, después del paso 2 de [Cómo probarlo](#-cómo-probarlo)): parsers SNMP, descubrimiento, polling, autenticación, *rate‑limiting* y cifrado de secretos.
-- **Secretos cifrados en reposo:** la contraseña SMTP y la que usa cada sede para conectarse al servidor central se guardan cifradas con AES-256-GCM (ver `apps/server/src/secrets.ts` y su prueba). La *community* SNMP **nunca** se expone al frontend.
+- **140 pruebas automatizadas** con Vitest (`npm test`, después del paso 2 de [Cómo probarlo](#-cómo-probarlo)): parsers SNMP, descubrimiento, polling, autenticación, *rate‑limiting* y cifrado de secretos.
+- **Secretos cifrados en reposo:** la *community* SNMP de cada impresora, la contraseña SMTP y la que usa cada sede para conectarse al servidor central se guardan cifradas con AES-256-GCM (ver `apps/server/src/secrets.ts` y su prueba). La community **nunca** se expone al frontend.
 - **Login protegido:** límite de intentos (*rate‑limit*) y **roles** (Administrador / Técnico / Observador) activables con `AUTH_ENFORCE=true`.
 - **Claro/oscuro y bilingüe:** el panel cambia entre modo claro y oscuro, y entre español e inglés.
 

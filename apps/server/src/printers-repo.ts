@@ -7,13 +7,19 @@
 import type { ProbeResult } from "@pdm/types";
 import { prisma } from "./db.js";
 import { shouldRecordStatusHistory } from "./history/snapshot-policy.js";
+import { OMIT_COMMUNITY, communityFor, encryptCommunity } from "./printer-community.js";
 
 function tonerOf(probe: ProbeResult, color: string): number | null {
   const s = probe.supplies.find((x) => x.color === color);
   return s?.percent ?? null;
 }
 
-export async function saveProbe(probe: ProbeResult, community: string, version: string) {
+/**
+ * `community`: la que el usuario indicó al agregar la impresora. Se guarda
+ * cifrada; si no se indica, al crear queda vacía (se usará la del entorno) y al
+ * actualizar se conserva la que ya tenía.
+ */
+export async function saveProbe(probe: ProbeResult, community: string | undefined, version: string) {
   const totalCounter = probe.counters.find((c) => c.type === "TOTAL")?.value ?? null;
 
   // Identidad ESTABLE por número de serie: evita duplicar la MISMA impresora
@@ -57,8 +63,7 @@ export async function saveProbe(probe: ProbeResult, community: string, version: 
       serialNumber: probe.info.serialNumber ?? null,
       firmware: probe.info.firmware ?? null,
       snmpVersion: version,
-      // NOTA: cifrado real de community pendiente (sección 23) — placeholder.
-      snmpCommunityEncrypted: community ? "***" : null,
+      snmpCommunityEncrypted: encryptCommunity(community),
       sysObjectId: probe.info.sysObjectId ?? null,
       status: probe.status.online,
       lastSeen: probe.reachable ? new Date() : null,
@@ -72,6 +77,7 @@ export async function saveProbe(probe: ProbeResult, community: string, version: 
       model: probe.info.model ?? undefined,
       serialNumber: probe.info.serialNumber ?? undefined,
       firmware: probe.info.firmware ?? undefined,
+      snmpCommunityEncrypted: community ? encryptCommunity(community) : undefined,
       sysObjectId: probe.info.sysObjectId ?? undefined,
       status: probe.status.online,
       lastSeen: probe.reachable ? new Date() : undefined,
@@ -144,12 +150,20 @@ export async function saveProbe(probe: ProbeResult, community: string, version: 
 export async function getPrinter(id: string) {
   return prisma.printer.findUnique({
     where: { id },
+    omit: OMIT_COMMUNITY,
     include: { supplies: true, counters: true, trays: true, location: true, workUnit: true },
   });
 }
 
+/** Community (descifrada) con la que se sondea una impresora; null si no existe. */
+export async function getPrinterCommunity(id: string): Promise<string | null> {
+  const p = await prisma.printer.findUnique({ where: { id }, select: { snmpCommunityEncrypted: true } });
+  return p ? communityFor(p.snmpCommunityEncrypted) : null;
+}
+
 export async function listPrinters() {
   return prisma.printer.findMany({
+    omit: OMIT_COMMUNITY,
     include: {
       supplies: true,
       location: true,
