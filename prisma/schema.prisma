@@ -58,7 +58,7 @@ model Location {
 }
 
 // Unidad de Trabajo: igual que Location (nombre único + descripción), otra
-// dimensión para clasificar la flota (p. ej. la unidad/negociado dueño del equipo).
+// dimensión para clasificar la flota (p. ej. la unidad/departamento dueño del equipo).
 model WorkUnit {
   id          String    @id @default(cuid())
   name        String    @unique
